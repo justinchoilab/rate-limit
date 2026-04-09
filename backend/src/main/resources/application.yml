@@ -1,0 +1,8 @@
+spring:
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: 6379
+
+server:
+  port: 8080
