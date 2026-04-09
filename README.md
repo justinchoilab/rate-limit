@@ -31,7 +31,7 @@ return count
 - API 호출 데모 (api): 10초 / 10회
 - 한도 초과 시 `429 Too Many Requests` 반환
 - 응답 헤더: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`
-- Redis 미연결 시 제한 없이 통과 (graceful degradation)
+- Redis 미연결 시 Spring 제한은 skip되지만 Nginx 1차 제한(50r/s)은 유지됨 (graceful degradation)
 
 ## 실행
 
