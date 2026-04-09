@@ -16,12 +16,22 @@ Spring Boot + Redis + React, Docker Compose로 실행합니다.
 `INCR`과 `EXPIRE`를 Lua 스크립트로 묶어 원자적으로 처리해 경쟁 조건 없이 카운팅합니다.
 
 ```lua
+-- KEYS[1] : Redis 키 (예: "rl:normal:127.0.0.1")
+-- ARGV[1] : 윈도우 크기 (초 단위, 예: 10)
+-- ARGV[2] : 요청 한도 (예: 20)
+
+-- 카운터를 1 증가. 키가 없으면 0에서 시작하므로 첫 호출은 1을 반환
 local count = redis.call('INCR', KEYS[1])
+
 if count == 1 then
+    -- 첫 요청: 키가 방금 생성됐으므로 TTL 설정 (윈도우 시작)
     redis.call('EXPIRE', KEYS[1], tonumber(ARGV[1]))
 elseif count > tonumber(ARGV[2]) then
+    -- 한도 초과: TTL을 윈도우 크기로 갱신해 슬라이딩 방지
     redis.call('EXPIRE', KEYS[1], tonumber(ARGV[1]))
 end
+
+-- 현재 카운트 반환 → 호출자가 한도 초과 여부를 판단
 return count
 ```
 
@@ -40,6 +50,8 @@ docker compose up -d --build
 ```
 
 브라우저에서 `http://localhost:3000` 접속.
+
+## 종료
 
 ```bash
 docker compose down
