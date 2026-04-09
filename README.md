@@ -10,6 +10,24 @@ Spring Boot + Redis + React, Docker Compose로 실행합니다.
 - Frontend: React 19, TypeScript, Vite
 - 인프라: Docker, Nginx
 
+## 아키텍처
+
+```mermaid
+flowchart TD
+    C["Client (API 요청)"]
+    C --> N["Nginx\nReverse Proxy · Rate Limiter\nrate=50r/s · burst=100 nodelay"]
+    N --> SB["Spring Boot\nRateLimitInterceptor\n엔드포인트별 IP 카운터 확인"]
+
+    SB --> REDIS
+
+    subgraph REDIS["Redis · Lua Script (RateLimitService)"]
+        R["INCR → 카운터 증가 (키 없으면 자동 생성)\ncount == 1 → EXPIRE 설정 (윈도우 시작)\ncount > limit → EXPIRE 갱신 (슬라이딩 방지)\n단일 Lua Script — 원자적 처리"]
+    end
+
+    REDIS --> OK["200 OK\nX-RateLimit-Limit\nX-RateLimit-Remaining · X-RateLimit-Reset"]
+    REDIS --> FAIL["429 Too Many Requests\nRetry-After · TOO_MANY_REQUESTS"]
+```
+
 ## 동작 원리
 
 요청마다 `RateLimitInterceptor`가 Redis에서 IP별 카운터를 확인합니다.  
